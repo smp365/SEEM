@@ -83,13 +83,10 @@ test_image = Image.fromarray((image_array * 255).astype(np.uint8))
 # Create the image dictionary
 image_dict = {'image': test_image, "mask":None}
 
-image_dict = {'image': test_image, "mask":None}
-
-image_dict = {'image': test_image, "mask":None}
-
 # Now you can feed the image into your model
 print("start inferencing...")
-result_image = inference(image_dict, task='Panoptic')[0]
+result_image, pano_seg, pano_seg_info = inference(image_dict, task='Panoptic')
+
 print("saving result image...")
 output_file = os.path.splitext(os.path.basename(test_image_file))[0]+"_result.png"
 result_image.save(output_file, format='PNG')
