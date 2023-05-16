@@ -49,6 +49,7 @@ def infer_image_panoptic(model, audio_model, image):
     results = model.model.evaluate(batch_inputs)
     pano_seg = results[-1]['panoptic_seg'][0]
     pano_seg_info = results[-1]['panoptic_seg'][1]
-    demo = visual.draw_panoptic_seg(pano_seg.cpu(), pano_seg_info) # rgb Image
-    res = demo.get_image()
-    return Image.fromarray(res), pano_seg, pano_seg_info
+    #demo = visual.draw_panoptic_seg(pano_seg.cpu(), pano_seg_info) # rgb Image
+    #res = demo.get_image()
+    #return Image.fromarray(res), pano_seg, pano_seg_info
+    return pano_seg, pano_seg_info
