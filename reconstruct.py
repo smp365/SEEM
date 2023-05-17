@@ -30,13 +30,12 @@ def read_pfm(file_path):
         data = np.fromfile(file, dtype=np.float32, count=height*width*channels)
         data = np.reshape(data, (height, width, channels))
         data = np.flip(data, axis=0)
-
         # If grayscale, return a 2D array instead of a 3D array
         if channels == 1:
             data = data[:, :, 0]
 
         return data, scale
-      
+
 # Load depth map
 depth_map, scale = read_pfm('/home/ec2-user/midas/MiDaS/output/Test001-dpt_swin2_large_384.pfm')
 
@@ -56,27 +55,16 @@ Y = (y - cy) * depth_map / fy
 Z = depth_map
 
 # Stack to create point cloud
-points = np.stack((X, Y, Z), axis=-1)
-
-# Create Open3D point cloud object
-#pcd = o3d.geometry.PointCloud()
-#pcd.points = o3d.utility.Vector3dVector(points.reshape(-1, 3))
-
-# Visualize point cloud
-# o3d.visualization.draw_geometries([pcd])
-
-# Save point cloud to a PLY file
-#o3d.io.write_point_cloud("Test001_point_cloud.ply", pcd)
-
-# Reshape the points into a 2D array where each row is a point
-points_2d = points.reshape(-1, 3)
-
-# Create a PlyElement instance for the points
-vertex = np.array(points_2d, dtype=[('x', 'f4'), ('y', 'f4'), ('z', 'f4')])
-
-# Flatten the vertex array into a 1D array of tuples 
 vertex = np.dstack([X, Y, Z]).reshape(-1, 3)
+
+# Convert to structured array
+vertex = np.core.records.fromarrays(vertex.transpose(), names='x, y, z', formats='f4, f4, f4')
+
+# Create ply element
 vertex_element = PlyElement.describe(vertex, 'vertex')
 
-# Write the PLY file
-PlyData([vertex_element]).write('output.ply')
+# Create ply data
+ply_data = PlyData([vertex_element])
+
+# Write ply data to file
+ply_data.write('Test001_point_cloud.ply')
