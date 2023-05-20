@@ -146,6 +146,8 @@ if input_path is not None:
         #    pano_seg_info = json.load(f)
         
         # For each object in pano_seg_info, create a mask and crop the original image
+        # scale the color values from the 0-1 range to 0-255 range
+        image_array = image_array * 255
         print ("creating cropped object and mask files...")
         for obj in pano_seg_info:
             # Create a binary mask for this object
@@ -156,8 +158,6 @@ if input_path is not None:
             from skimage.transform import resize
             mask_resized = resize(mask, (image_array.shape[0], image_array.shape[1]))
 
-            # scale the color values from the 0-1 range to 0-255 range
-            image_array = image_array * 255
 
             # Crop the original image using the mask
             cropped = image_array * np.expand_dims(mask_resized, axis=-1)
