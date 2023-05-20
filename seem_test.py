@@ -92,7 +92,7 @@ def process_file(test_image_file):
    # Save image file with color coded pixels and object names
    #output_image_file = os.path.splitext(test_image_basename)[0]+"_result.png"
    #result_image.save(output_image_file, format='PNG')
-   return pano_seg, pano_seg_info
+   return pano_seg, pano_seg_info, image_array
 
 
 # open the image file and process
@@ -121,7 +121,7 @@ if input_path is not None:
         basename = os.path.basename(image_name)
         print("  Processing {} ({}/{})".format(image_name, index + 1, num_images))
         # open the image file and process
-        pano_seg, pano_seg_info = process_file(image_name)
+        pano_seg, pano_seg_info, image_array = process_file(image_name)
 
         print("saving result files...")
 
@@ -144,4 +144,31 @@ if input_path is not None:
         # Load pano_seg_info list of dictionaries
         #with open('pano_seg_info.json', 'r') as f:
         #    pano_seg_info = json.load(f)
+        
+        # For each object in pano_seg_info, create a mask and crop the original image
+        print ("creating cropped object and mask files...")
+        for obj in pano_seg_info:
+            # Create a binary mask for this object
+            print("object", obj['id'])
+            mask = (pano_seg == obj['id']).cpu().numpy().astype(np.uint8) * 255
+
+            # Resize the mask to match the image_array dimensions
+            from skimage.transform import resize
+            mask_resized = resize(mask, (image_array.shape[0], image_array.shape[1]))
+
+            # scale the color values from the 0-1 range to 0-255 range
+            image_array = image_array * 255
+
+            # Crop the original image using the mask
+            cropped = image_array * np.expand_dims(mask_resized, axis=-1)
+
+            # Save the mask and cropped image to files
+            cropped_image_path=os.path.join(output_path, os.path.splitext(basename)[0])
+            os.makedirs(cropped_image_path, exist_ok=True)
+
+            mask_img = Image.fromarray(mask)
+            mask_img.save(os.path.join(cropped_image_path, f"{obj['id']}_mask.png"))
+            cropped_img = Image.fromarray(cropped.astype(np.uint8))
+            cropped_img.save(os.path.join(cropped_image_path, f"{obj['id']}_cropped.png"))
+
 
