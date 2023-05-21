@@ -8,8 +8,14 @@ mesh = trimesh.load('path_to_your_3d_model.obj')
 # Create a scene
 scene = pyrender.Scene()
 
-# Add the 3D model to the scene
-scene.add(pyrender.Mesh.from_trimesh(mesh))
+# Check if the loaded object is a scene (i.e., contains multiple meshes)
+if isinstance(loaded, trimesh.Scene):
+    # Add each mesh in the scene to the pyrender scene
+    for mesh in loaded.geometry.values():
+        scene.add(pyrender.Mesh.from_trimesh(mesh))
+else:
+    # Add the single mesh to the pyrender scene
+    scene.add(pyrender.Mesh.from_trimesh(loaded))
 
 # Set the camera parameters
 camera = pyrender.PerspectiveCamera(yfov=np.pi / 3.0)
