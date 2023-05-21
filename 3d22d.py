@@ -3,7 +3,7 @@ import numpy as np
 import trimesh
 
 # Load the 3D model
-mesh = trimesh.load('path_to_your_3d_model.obj')
+loaded = trimesh.load('path_to_your_3d_model.obj')
 
 # Create a scene
 scene = pyrender.Scene()
