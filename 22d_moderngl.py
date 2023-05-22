@@ -51,9 +51,6 @@ ebo = ctx.buffer(mesh.faces.astype('i4').tobytes())
 vao = ctx.simple_vertex_array(prog, vbo, 'in_position', index_buffer=ebo)
 
 # Use the framebuffer
-
-```python
-# Use the framebuffer
 fbo.use()
 
 # Clear the framebuffer
