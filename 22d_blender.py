@@ -14,15 +14,20 @@ bpy.context.scene.render.resolution_x = 800
 bpy.context.scene.render.resolution_y = 600
 
 # Set camera and light parameters here...
-camera = pyrender.PerspectiveCamera(yfov=np.pi / 3.0)
-s = np.sqrt(2)/2
-camera_pose = np.array([
-    [0.0, -s,   s,   0.3],
-    [1.0,  0.0, 0.0, 0.0],
-    [0.0,  s,   s,   0.35],
-    [0.0,  0.0, 0.0, 1.0],
-])
-bpy.add(camera, pose=camera_pose)
+# Create a new camera object
+bpy.ops.object.camera_add(location=(0.0, -10.0, 0.0))
+# Set the camera's position
+camera.location = (0.0, -10.0, 0.0)
+
+# Point the camera towards a location
+point = bpy.data.objects.new('Point', None)
+bpy.context.collection.objects.link(point)
+point.location = (0.0, 0.0, 0.0)
+
+constraint = camera.constraints.new(type='TRACK_TO')
+constraint.target = point
+constraint.track_axis = 'TRACK_NEGATIVE_Z'
+constraint.up_axis = 'UP_Y'
 
 # Render the scene and write it to a file
 bpy.context.scene.render.filepath='/home/ec2-user/3d/3dtest/output'
