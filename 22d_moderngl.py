@@ -5,7 +5,7 @@ from pyrr import Matrix44, Vector3
 import trimesh
 
 # Load the 3D model
-mesh = trimesh.load_mesh('model.obj')
+mesh = trimesh.load_mesh('desk.obj')
 
 # Create a standalone ModernGL context
 ctx = moderngl.create_standalone_context()
@@ -50,7 +50,7 @@ ebo = ctx.buffer(mesh.faces.astype('i4').tobytes())
 # Create a vertex array object
 vao = ctx.simple_vertex_array(prog, vbo, 'in_position', index_buffer=ebo)
 
-# Use the framebufferI apologize for the incomplete response. Here is the continuation of the code:
+# Use the framebuffer
 
 ```python
 # Use the framebuffer
