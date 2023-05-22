@@ -25,4 +25,5 @@ camera_pose = np.array([
 bpy.add(camera, pose=camera_pose)
 
 # Render the scene and write it to a file
+bpy.context.scene.render.filepath='/home/ec2-user/3d/3dtest/output'
 bpy.ops.render.render(write_still=True)
