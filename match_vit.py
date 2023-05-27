@@ -44,11 +44,13 @@ def extract_embeddings(image_paths, feature_extractor, model, batch_size=32):
         for image_path in image_paths[i:i+batch_size]:
             image = Image.open(image_path).convert("RGB")
             image = transformation_chain(image)
+            # Ensure the image has the expected shape
+            assert image.shape == torch.Size([3, 224, 224]), f"Unexpected shape for image {image_path}"
             batch_images.append(image)
         batch_images = torch.stack(batch_images).to(device)
         with torch.no_grad():
-            #features = feature_extractor(images=batch_images, return_tensors="pt")
-            embeddings.append(model(**batch_images).last_hidden_state[:, 0].cpu())
+#            features = feature_extractor(images=batch_images, return_tensors="pt")
+            embeddings.append(model(pixel_values=batch_images).last_hidden_state[:, 0].cpu())
     embeddings = torch.cat(embeddings)
     return embeddings
 
@@ -69,6 +71,16 @@ import numpy as np
 all_candidate_embeddings = np.array(candidate_subset_emb)
 all_candidate_embeddings = torch.from_numpy(all_candidate_embeddings)
 
+# for convenience, we create a list containing the identifiers of the candidate images.
+candidate_ids = []
+for id, image_name in enumerate(view_image_names):
+    name = os.path.basename(image_name)
+    
+    # Create a unique indentifier.
+    entry = str(id) + "_" + str(name)
+
+    candidate_ids.append(entry)
+    
 # use cosine similarity to compute the similarity score in between two embedding vectors
 def compute_scores(emb_one, emb_two):
     """Computes cosine similarity between two vectors."""
