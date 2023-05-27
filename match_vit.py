@@ -1,7 +1,8 @@
+
 #https://huggingface.co/blog/image-similarity
 #https://colab.research.google.com/github/huggingface/notebooks/blob/main/examples/image_similarity.ipynb#scrollTo=u2yJIlPbgGGh
 
-from transformers import AutoFeatureExtractor, AutoModel
+from transformers import AutoModel, AutoTokenizer, AutoFeatureExtractor
 from PIL import Image
 
 import torchvision.transforms as T
@@ -26,14 +27,14 @@ transformation_chain = T.Compose(
         T.Resize(int((256 / 224) * feature_extractor.size["height"])),
         T.CenterCrop(feature_extractor.size["height"]),
         T.ToTensor(),
-        T.Normalize(mean=feature_extractor.image_mean, std=feature_extractor.image_std),
+        #T.Normalize(mean=feature_extractor.image_mean, std=feature_extractor.image_std),
     ]
 )
+
 import torch
 
 # Extract the embeddings from the candidate images (candidate_subset) storing them in a matrix.
 # Modified to read files form a folder
-from torchvision.transforms import ToTensor
 
 def extract_embeddings(image_paths, feature_extractor, model, batch_size=32):
     transform = transformation_chain
@@ -44,23 +45,25 @@ def extract_embeddings(image_paths, feature_extractor, model, batch_size=32):
             image = Image.open(image_path).convert("RGB")
             image = transform(image)
             batch_images.append(image)
-        batch_images = torch.stack(batch_images).to("cuda")
+#        batch_images = torch.stack(batch_images).to("cuda")
+        batch_images = torch.stack(batch_images)
         with torch.no_grad():
-            features = feature_extractor(images=batch_images,return_tensors="pt")
+            features = feature_extractor(images=batch_images, return_tensors="pt")
             embeddings.append(model(**features).last_hidden_state[:, 0].cpu())
     embeddings = torch.cat(embeddings)
     return embeddings
 
 batch_size = 24
-#device = "cuda" if torch.cuda.is_available() else "cpu"
+device = "cuda" if torch.cuda.is_available() else "cpu"
 #extract_fn = extract_embeddings(model.to(device))
 #candidate_subset_emb = candidate_subset.map(extract_fn, batched=True, batch_size=24)
 
 import glob, os
 view_foder = '/home/ec2-user/3d/matching/2dviews'
+view_paths = os.path.join(view_foder, "*")
 view_image_names = glob.glob(os.path.join(view_foder, "*"))
    
-candidate_subset_emb = extract_embeddings(view_image_names, feature_extractor, model)
+candidate_subset_emb = extract_embeddings(view_image_names, feature_extractor, model.to(device),batch_size=2)
 print (len(candidate_subset_emb), len(candidate_subset_emb[0]))
 
 import numpy as np
@@ -88,7 +91,7 @@ def fetch_similar(image, top_k=5):
     # and their similarity scores with the query image.
     sim_scores = compute_scores(all_candidate_embeddings, query_embeddings)
     similarity_mapping = dict(zip(candidate_ids, sim_scores))
- 
+    
     # Sort the mapping dictionary and return `top_k` candidates.
     similarity_mapping_sorted = dict(
         sorted(similarity_mapping.items(), key=lambda x: x[1], reverse=True)
