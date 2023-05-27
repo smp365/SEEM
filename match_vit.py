@@ -37,16 +37,15 @@ import torch
 # Modified to read files form a folder
 
 def extract_embeddings(image_paths, feature_extractor, model, batch_size=32):
-    transform = transformation_chain
+    device = model.device
     embeddings = []
     for i in range(0, len(image_paths), batch_size):
         batch_images = []
         for image_path in image_paths[i:i+batch_size]:
             image = Image.open(image_path).convert("RGB")
-            image = transform(image)
+            image = transformation_chain(image)
             batch_images.append(image)
-#        batch_images = torch.stack(batch_images).to("cuda")
-        batch_images = torch.stack(batch_images)
+        batch_images = torch.stack(batch_images).to(device)
         with torch.no_grad():
             features = feature_extractor(images=batch_images, return_tensors="pt")
             embeddings.append(model(**features).last_hidden_state[:, 0].cpu())
@@ -107,3 +106,6 @@ input_image_file = "10_dining_table_cropped_640_480.png"
 input_image = Image.open(input_image_file).convert("RGB")
 similar_results = fetch_similar(input_image,5)
 print(similar_results)
+
+
+
