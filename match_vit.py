@@ -47,8 +47,8 @@ def extract_embeddings(image_paths, feature_extractor, model, batch_size=32):
             batch_images.append(image)
         batch_images = torch.stack(batch_images).to(device)
         with torch.no_grad():
-            features = feature_extractor(images=batch_images, return_tensors="pt")
-            embeddings.append(model(**features).last_hidden_state[:, 0].cpu())
+            #features = feature_extractor(images=batch_images, return_tensors="pt")
+            embeddings.append(model(**batch_images).last_hidden_state[:, 0].cpu())
     embeddings = torch.cat(embeddings)
     return embeddings
 
