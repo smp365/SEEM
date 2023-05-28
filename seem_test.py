@@ -166,37 +166,46 @@ for index, image_name in enumerate(image_names):
         mask_img.save(os.path.join(cropped_image_path, f"{obj_name}_mask.png"))
         cropped_img = Image.fromarray(cropped.astype(np.uint8))
         cropped_img.save(os.path.join(cropped_image_path, f"{obj_name}_cropped.png"))        
-    
+  
+    import imageio # for pfm file access
     def save_cropped_depth_map(obj, depth_map):
         # Create a binary mask for this object
         print("crop depth map of object", obj['id'])
-        mask = (pano_seg == obj['id']).cpu().numpy().astype(np.uint8)
+        obj_name = str(obj['id']) + "_" + COCO_PANOPTIC_CLASSES[obj['category_id']]
+        mask = (pano_seg == obj['id']).cpu().numpy().astype(np.uint8) * 255
         
         # Resize the mask to match the depth_map dimensions
         from skimage.transform import resize
         mask_resized = resize(mask, (depth_map.shape[0], depth_map.shape[1]))
         
-        # Expand dimensions of the mask to match the depth map
-        mask_resized = np.expand_dims(mask_resized, axis=-1)
-        mask_resized = np.repeat(mask_resized, 3, axis=-1)
+        # if png, expand dimensions of the mask to match the depth map
+        #mask_resized = np.expand_dims(mask_resized, axis=-1)
+        #mask_resized = np.repeat(mask_resized, 3, axis=-1)
 
         # Isolate the object in the depth map using the mask
         isolated_object_depth_map = depth_map * mask_resized
         
-        obj_name = str(obj['id']) + "_" + COCO_PANOPTIC_CLASSES[obj['category_id']]
-
         # Save the isolated object depth map to a file
-        isolated_object_depth_map_path = os.path.join(output_path, os.path.splitext(basename)[0], f"{obj_name}_isolated_object_depth_map.png")
-        isolated_object_depth_map_img = Image.fromarray(isolated_object_depth_map.astype(np.uint8))
-        isolated_object_depth_map_img.save(isolated_object_depth_map_path)
+        # if png
+        #isolated_object_depth_map_path = os.path.join(output_path, os.path.splitext(basename)[0], f"{obj_name}_isolated_object_depth_map.png")
+        #isolated_object_depth_map_img = Image.fromarray(isolated_object_depth_map.astype(np.uint8))
+        #isolated_object_depth_map_img.save(isolated_object_depth_map_path)
+        # if pfm
+        isolated_object_depth_map_path = os.path.join(output_path, os.path.splitext(basename)[0], f"{obj_name}_isolated_object_depth_map.pmf")
+        imageio.imwrite(isolated_object_depth_map_path, isolated_object_depth_map)
     
     # scale the color values from the 0-1 range to 0-255 range
     image_array = image_array * 255
     
     # Load depth map
-    depth_map_path = os.path.join(os.path.splitext(image_name)[0], f"-dpt_swin2_large_384.png")
-    depth_map_img = PIL.Image.open(depth_map_path)
-    depth_map = np.array(depth_map_img)
+    # if png
+    #depth_map_path = os.path.join(os.path.splitext(image_name)[0], f"-dpt_swin2_large_384.png")
+    #depth_map_img = PIL.Image.open(depth_map_path)
+    #depth_map = np.array(depth_map_img)
+    
+    # if pfm
+    depth_map_path = os.path.splitext(image_name)[0] + f"-dpt_swin2_large_384.pfm"
+    depth_map = imageio.imread(depth_map_path)
     
 
     for obj in pano_seg_info:
