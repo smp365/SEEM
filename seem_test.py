@@ -102,8 +102,9 @@ def process_file(test_image_file):
 # get input
 import glob
 input_path = '/home/ec2-user/SAM/Segment-Everything-Everywhere-All-At-Once/demo_code/testset/'
+input_path_pfm ='/home/ec2-user/midas/MiDaS/output'
 if input_path is not None:
-    image_names = glob.glob(os.path.join(input_path, "*"))
+    image_names = glob.glob(os.path.join(input_path, "*.png"))
     num_images = len(image_names)
 else:
     print("No input path specified.")
@@ -167,16 +168,20 @@ for index, image_name in enumerate(image_names):
         cropped_img = Image.fromarray(cropped.astype(np.uint8))
         cropped_img.save(os.path.join(cropped_image_path, f"{obj_name}_cropped.png"))        
   
-    import imageio # for pfm file access
+    # imageio has issues when access pfm create by MiDaS
+    from read_pfm import read_pfm
+    from write_pfm import write_pfm
     def save_cropped_depth_map(obj, depth_map):
         # Create a binary mask for this object
         print("crop depth map of object", obj['id'])
         obj_name = str(obj['id']) + "_" + COCO_PANOPTIC_CLASSES[obj['category_id']]
-        mask = (pano_seg == obj['id']).cpu().numpy().astype(np.uint8) * 255
+        mask = (pano_seg == obj['id']).cpu().numpy().astype(np.uint8)
         
         # Resize the mask to match the depth_map dimensions
         from skimage.transform import resize
         mask_resized = resize(mask, (depth_map.shape[0], depth_map.shape[1]))
+        # binarize the mask again, value between 0 and 1 can be introduced when resizing
+        mask_resized = (mask_resized > 0.5).astype(np.float32) 
         
         # if png, expand dimensions of the mask to match the depth map
         #mask_resized = np.expand_dims(mask_resized, axis=-1)
@@ -190,9 +195,19 @@ for index, image_name in enumerate(image_names):
         #isolated_object_depth_map_path = os.path.join(output_path, os.path.splitext(basename)[0], f"{obj_name}_isolated_object_depth_map.png")
         #isolated_object_depth_map_img = Image.fromarray(isolated_object_depth_map.astype(np.uint8))
         #isolated_object_depth_map_img.save(isolated_object_depth_map_path)
+        
         # if pfm
         isolated_object_depth_map_path = os.path.join(output_path, os.path.splitext(basename)[0], f"{obj_name}_isolated_object_depth_map.pmf")
-        imageio.imwrite(isolated_object_depth_map_path, isolated_object_depth_map)
+        
+        # Normalize the depth values to [0, 1], original pfm is not nomalized, so don't do it. 
+        # isolated_object_depth_map = (isolated_object_depth_map - np.min(isolated_object_depth_map)) / (np.max(isolated_object_depth_map) - np.min(isolated_object_depth_map))
+
+        # Convert to float32
+        isolated_object_depth_map = isolated_object_depth_map.astype(np.float32)
+
+        # Save the isolated object depth map to a file
+        write_pfm(isolated_object_depth_map_path, isolated_object_depth_map)
+
     
     # scale the color values from the 0-1 range to 0-255 range
     image_array = image_array * 255
@@ -204,10 +219,9 @@ for index, image_name in enumerate(image_names):
     #depth_map = np.array(depth_map_img)
     
     # if pfm
-    depth_map_path = os.path.splitext(image_name)[0] + f"-dpt_swin2_large_384.pfm"
-    depth_map = imageio.imread(depth_map_path)
-    
-
+    depth_map_path = os.path.join(input_path_pfm, os.path.splitext(basename)[0]) + f"-dpt_swin2_large_384.pfm"
+    depth_map = read_pfm(depth_map_path)
+  
     for obj in pano_seg_info:
         # For each object in pano_seg_info, create a mask and crop the original image
         print ("creating cropped object and mask files...")
